@@ -14,6 +14,21 @@ resuming immediately first cancels that timer. If scheduling fails after the
 service was stopped, the service is started again so a failed timer cannot
 leave sync paused unexpectedly.
 
+Toasts with nothing to click go out through `omarchy-notification-send`. A
+clickable one goes through `notify-send` instead, because only it can register
+the libnotify `default` action that a click *is* to every notification daemon
+but Omarchy's own — a replacement service such as omapager reads no hints and
+would otherwise leave the card dead. Omarchy's `omarchy-exec-argv` hint rides
+along beside the action and the two never both fire, because Omarchy runs the
+hint and returns before it looks for an action. Either way the click is a
+closed argv, never a shell string.
+
+An action exists only while its sender is on the bus to receive
+`ActionInvoked`, so `omaonedrive-click` sends the notification and then stays
+alive waiting for the click, ending when the toast is clicked, closed or
+expires. `Service.qml` detaches it and hands over only the resolved helper
+path; the command shape belongs to `Model.js`.
+
 `onedrive-status.py` reads:
 
 - the effective `sync_dir` from `onedrive --display-config`;

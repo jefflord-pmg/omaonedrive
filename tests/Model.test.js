@@ -141,19 +141,41 @@ test("notification click actions follow Omarchy 4.0.1's safe argv contract", () 
   )
   assert.deepEqual(Model.notificationActionArgv("arbitrary user input"), [])
 
+  // A clickable toast goes through the helper, which is what keeps the
+  // libnotify "default" action alive: an action only exists while its sender
+  // is still on the bus to be told the card was clicked.
+  const clickable = Model.notificationCommand(
+    "critical", "OneDrive failed", "Open the panel.", "open", "/x/omaonedrive-click")
+  assert.equal(clickable[0], "/x/omaonedrive-click")
+  assert.deepEqual(JSON.parse(clickable[1]),
+    ["omarchy-shell", "io.github.salemsayed.omaonedrive", "open"])
+  const notifyArgv = JSON.parse(clickable[2])
+  assert.equal(notifyArgv[0], "notify-send")
+  assert.deepEqual(notifyArgv.slice(-2), ["OneDrive failed", "Open the panel."])
+  // Omarchy's own service reads its click out of this hint and returns before
+  // it looks for an action, so the two clicks never both fire.
+  const hint = notifyArgv[notifyArgv.indexOf("--hint") + 1]
+  assert.deepEqual(JSON.parse(hint.slice("string:omarchy-exec-argv:".length)),
+    ["omarchy-shell", "io.github.salemsayed.omaonedrive", "open"])
+  // The action and its file descriptor belong to the helper.
+  assert.ok(!notifyArgv.includes("--action"))
+  assert.ok(!notifyArgv.includes("--selected-action-fd"))
+
+  // Nothing to click needs nothing kept alive behind it.
   assert.deepEqual(
-    Model.notificationCommand("critical", "OneDrive failed", "Open the panel.", "open"),
-    [
-      "omarchy-notification-send", "--app-name", "OmaOneDrive", "--urgency", "critical",
-      "OneDrive failed", "Open the panel.", "--exec",
-      "omarchy-shell", "io.github.salemsayed.omaonedrive", "open"
-    ]
-  )
-  assert.deepEqual(
-    Model.notificationCommand("normal", "OneDrive recovered", "Sync is healthy.", ""),
+    Model.notificationCommand("normal", "OneDrive recovered", "Sync is healthy.", "",
+                              "/x/omaonedrive-click"),
     [
       "omarchy-notification-send", "--app-name", "OmaOneDrive", "--urgency", "normal",
       "OneDrive recovered", "Sync is healthy."
+    ]
+  )
+  // No helper resolved: a plain toast still goes out, just without the click.
+  assert.deepEqual(
+    Model.notificationCommand("critical", "OneDrive failed", "Open the panel.", "open", ""),
+    [
+      "omarchy-notification-send", "--app-name", "OmaOneDrive", "--urgency", "critical",
+      "OneDrive failed", "Open the panel."
     ]
   )
 })

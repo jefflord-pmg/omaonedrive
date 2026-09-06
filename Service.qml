@@ -51,6 +51,9 @@ Item {
   readonly property int refreshIntervalSec: intSetting("refreshIntervalSec", 30, 10, 3600)
   readonly property int recentFileLimit: intSetting("recentFileLimit", 20, 5, 50)
   readonly property string helperPath: Model.filePath(Qt.resolvedUrl("onedrive-status.py"))
+  // Serves a clickable toast's action for as long as the toast is on screen:
+  // a libnotify action exists only while its sender is still on the bus.
+  readonly property string clickHelperPath: Model.filePath(Qt.resolvedUrl("omaonedrive-click"))
   readonly property bool busy: statusProcess.running || controlProcess.running
     || cancelTimerProcess.running || scheduleTimerProcess.running
   readonly property string resumeUnit: "omaonedrive-resume"
@@ -150,12 +153,13 @@ Item {
 
   function notify(urgency, summary, body) {
     if (!notificationsEnabled) return
-    Quickshell.execDetached(Model.notificationCommand(urgency, summary, body, ""))
+    Quickshell.execDetached(Model.notificationCommand(urgency, summary, body, "", clickHelperPath))
   }
 
   function notifyWithAction(urgency, summary, body, behavior) {
     if (!notificationsEnabled) return
-    Quickshell.execDetached(Model.notificationCommand(urgency, summary, body, behavior))
+    Quickshell.execDetached(
+      Model.notificationCommand(urgency, summary, body, behavior, clickHelperPath))
   }
 
   function applyStatus(raw) {

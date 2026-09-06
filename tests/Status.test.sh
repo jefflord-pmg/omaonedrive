@@ -345,9 +345,16 @@ grep -Fq '["systemctl", "--user", "start", "onedrive.service"]' "$root/Service.q
 grep -Fq '["omarchy-launch-terminal", "onedrive"]' "$root/Service.qml"
 grep -Fq '["omarchy-launch-terminal", "onedrive", "--reauth"]' "$root/Service.qml"
 grep -Fq '["omarchy-launch-terminal", "onedrive", "--sync", "--resync"]' "$root/Service.qml"
-grep -Fq 'Model.notificationCommand(urgency, summary, body, behavior)' "$root/Service.qml"
-grep -Fq 'command.push("--exec")' "$root/Model.js"
+grep -Fq 'Model.notificationCommand(urgency, summary, body, behavior, clickHelperPath)' \
+  "$root/Service.qml"
+# The click rides as both Omarchy's hint and a libnotify action, so a toast is
+# clickable under a replacement notification service too. Both carry the same
+# argv; neither is ever a shell string.
+grep -Fq 'string:omarchy-exec-argv:' "$root/Model.js"
+grep -Fq 'return [clickHelper, JSON.stringify(actionArgv), JSON.stringify(notifyArgv)]' \
+  "$root/Model.js"
 grep -Fq 'return ["omarchy-shell", IPC_TARGET, "open"]' "$root/Model.js"
+test -x "$root/omaonedrive-click"
 if grep -Fq '"notify-send"' "$root/Service.qml"; then
   echo "service still calls notify-send directly" >&2
   exit 1

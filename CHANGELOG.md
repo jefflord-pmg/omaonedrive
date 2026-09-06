@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.5.7 - 2026-09-06
+
+- Make actionable notifications clickable under notification daemons other
+  than Omarchy's own. The click command travelled only in Omarchy's
+  `omarchy-exec-argv` hint, which no other daemon reads, so under a
+  replacement service such as omapager clicking "OneDrive failed" did nothing
+  at all. A clickable toast now also registers a real libnotify `default`
+  action, served by the new `omaonedrive-click` helper, which stays on the bus
+  for as long as the toast is on screen because an action exists only while
+  its sender does. Omarchy's own service still reads the hint, which it checks
+  first, so a toast never runs its command twice.
+
 ## 1.5.6 - 2026-08-31
 
 - Make actionable notifications compatible with Omarchy 4.0.1 by placing

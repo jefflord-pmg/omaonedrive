@@ -16,28 +16,37 @@ var DOCUMENT_EXTENSIONS = {
 
 var IPC_TARGET = "io.github.salemsayed.omaonedrive"
 
-// Actions passed to omarchy-notification-send --exec are deliberately a closed
-// argv set. Omarchy 4.0.1 consumes every argument after --exec as the click
-// command, so the delimiter must follow the notification text and each command
-// word must remain a separate array element.
+// A toast's click is deliberately a closed argv set, never a shell string, so
+// nothing derived from a status line can become a command word.
 function notificationActionArgv(behavior) {
   if (behavior === "open") return ["omarchy-shell", IPC_TARGET, "open"]
   if (behavior === "repair") return ["omarchy-shell", IPC_TARGET, "resync"]
   return []
 }
 
-function notificationCommand(urgency, summary, body, behavior) {
-  var command = [
-    "omarchy-notification-send", "--app-name", "OmaOneDrive", "--urgency", urgency,
+// A toast with nothing to click is a plain send and needs no helper alive
+// behind it. A clickable one goes through notify-send, because only it can
+// register the libnotify "default" action that a click *is* to every
+// notification daemon but Omarchy's own — a replacement service such as
+// omapager reads no hints and would leave the card dead. Omarchy's own click
+// hint rides along beside the action; Omarchy runs the hint and returns before
+// it ever looks for an action, so a toast never fires its command twice.
+function notificationCommand(urgency, summary, body, behavior, clickHelper) {
+  var actionArgv = notificationActionArgv(behavior)
+  if (actionArgv.length === 0 || !clickHelper) {
+    return [
+      "omarchy-notification-send", "--app-name", "OmaOneDrive", "--urgency", urgency,
+      summary, body
+    ]
+  }
+  // The action and its file descriptor belong to the helper, which owns this
+  // notification's lifetime; they are not set here.
+  var notifyArgv = [
+    "notify-send", "-a", "OmaOneDrive", "-u", urgency,
+    "--hint", "string:omarchy-exec-argv:" + JSON.stringify(actionArgv),
     summary, body
   ]
-  var actionArgv = notificationActionArgv(behavior)
-  if (actionArgv.length > 0) {
-    command.push("--exec")
-    for (var index = 0; index < actionArgv.length; index++)
-      command.push(actionArgv[index])
-  }
-  return command
+  return [clickHelper, JSON.stringify(actionArgv), JSON.stringify(notifyArgv)]
 }
 
 function defaultStatus() {

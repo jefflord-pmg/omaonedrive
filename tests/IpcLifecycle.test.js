@@ -18,10 +18,15 @@ test("IPC registration waits for a relocated bar slot to retire", () => {
   assert.match(source, /IpcHandler \{\s+enabled: root\.ipcRegistrationReady\s+target: root\.moduleName/)
 })
 
-test("notification actions use Omarchy's durable exec hint with argv", () => {
-  assert.match(serviceSource, /Model\.notificationCommand\(urgency, summary, body, behavior\)/)
+test("notification actions stay an argv the model builds, never a shell string", () => {
+  assert.match(
+    serviceSource,
+    /Model\.notificationCommand\(urgency, summary, body, behavior, clickHelperPath\)/)
+  assert.match(serviceSource, /readonly property string clickHelperPath: Model\.filePath\(/)
   assert.doesNotMatch(serviceSource, /notificationActionCommand/)
   assert.doesNotMatch(serviceSource, /"--exec", actionCommand/)
+  // The command shape belongs to Model.js and the helper; the service only
+  // hands over the resolved path.
   assert.doesNotMatch(serviceSource, /"notify-send"/)
   assert.doesNotMatch(serviceSource, /--action=default=/)
 })
