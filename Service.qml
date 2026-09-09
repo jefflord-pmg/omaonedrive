@@ -328,7 +328,11 @@ Item {
 
   function openFile(file) {
     if (!file || !file.path) return
-    Quickshell.execDetached(["uwsm-app", "--", "nautilus", "--select", fileUri(String(file.path))])
+    Quickshell.execDetached([
+      "busctl", "--user", "call", "org.freedesktop.FileManager1",
+      "/org/freedesktop/FileManager1", "org.freedesktop.FileManager1",
+      "ShowItems", "ass", "1", fileUri(String(file.path)), ""
+    ])
   }
 
   function fileUri(path) {

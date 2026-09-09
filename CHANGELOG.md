@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.8 - 2026-09-09
+
+- Reveal files through the desktop FileManager1 ShowItems interface instead of launching a hard-coded Nautilus process.
+
 ## 1.5.7 - 2026-09-06
 
 - Make actionable notifications clickable under notification daemons other
